@@ -6,7 +6,7 @@ import random
 
 OUT_RADIUS = 450
 OUT_DIAMETER = OUT_RADIUS * 2
-focal_lengths = [8, 9, 10]
+focal_lengths = [40]
 per_mm = 3.7795275591
 min_fl = min(focal_lengths) * per_mm
 
@@ -36,7 +36,8 @@ def new_focal_length():
 
 def fisheye(xy):
     f = new_focal_length()[1]
-    max_theta = np.arctan(OUT_DIAMETER / f)
+    # max_theta = np.arctan(OUT_DIAMETER / f)
+    max_theta = np.pi / 2
 
     center = np.mean(xy, axis=0)
     x, y = (xy - center).T * 2
@@ -49,8 +50,9 @@ def fisheye(xy):
     return np.column_stack((d * np.cos(phi), d * np.sin(phi))) + center
 
 
-im = io.imread('/Users/tyawang/OneDrive/Research/fisheye_detection/playground/data/000000000139.jpg')
+im = io.imread('data/000000000139.jpg')
 
+# processed_im = crop_circle(im)
 processed_im = im
 out = transform.warp(processed_im, fisheye)
 
