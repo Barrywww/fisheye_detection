@@ -5,10 +5,10 @@ from skimage import io, draw
 from math import floor
 
 
-DATA_DIR = "/Users/tyawang/Datasets/wireframe/"
+DATA_DIR = "data/wireframe/pointlines/"
 
 def visualize(filename):
-    with open(DATA_DIR + 'pointlines/' + filename + '.pkl', 'rb') as file:
+    with open(DATA_DIR + filename + '.pkl', 'rb') as file:
         data = pickle.load(file)
         lines = data['lines']
         points = data['points']
@@ -34,4 +34,5 @@ def info(filename):
         print(data.keys())
 
 
-info('00030043')
+filename = '00030043'
+visualize(filename)
