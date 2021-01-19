@@ -30,6 +30,7 @@ def crop_rect(img: np.ndarray, points=None, length=OUT_DIAMETER):
         points = points - c0
         k = length / img.shape[0]
         points = points * k + length / 2
+
     return transform.resize(img, (length, length)), points
 
 def resize(img: np.ndarray, points: np.ndarray, min_length=OUT_DIAMETER):
@@ -71,6 +72,26 @@ def get_img_pointline(data):
     img = data['img']
     return img, points, lines
 
+def get_heatmap(img, points, lines, f, scale):
+    points += np.array(img.shape[:2]) // 2 - 1
+
+    orig_hm = np.zeros(img.shape[:2])
+
+    for i in range(lines.shape[0]):
+        start, end = points[lines[i][0]].astype(int), points[lines[i][1]].astype(int)
+        # print(start, end)
+        distance = np.linalg.norm(start - end)
+        rr, cc = skimage.draw.line(start[0], start[1], end[0], end[1])
+        line = np.column_stack((rr, cc))
+        line = line[(line[:,0] >= 0) & (line[:,1] < img.shape[1])]
+        rr, cc = line[:, 0], line[:, 1]
+        orig_hm[rr, cc] = distance
+
+    fisheye_hm = transform.warp(orig_hm, _fisheye, map_args={'f': f})
+    fisheye_hm = crop_corners(fisheye_hm, scale)
+
+    return fisheye_hm
+
 def crop_corners(img: np.ndarray, scale):
     length0 = img.shape[0]
     length_prime = int(scale * length0)
@@ -89,6 +110,7 @@ def warp_points(points: np.ndarray, center, f, scale):
     r = 2 * theta * OUT_RADIUS / np.pi
 
     return np.column_stack((r * np.cos(phi) * scale, r * np.sin(phi) * scale)) + center
+
 
 def fisheye_transform(data: np.ndarray, circle=True):
     img, points, lines = get_img_pointline(data)
@@ -111,8 +133,10 @@ def fisheye_transform(data: np.ndarray, circle=True):
     out = transform.warp(img, _fisheye, map_args={'f': f})
     out = crop_corners(out, scale)
     warped_points = warp_points(points, (uc, vc), f, scale)
+
+    fisheye_hm = get_heatmap(img, points, lines, f, scale)
     
-    return out, warped_points, f
+    return out, warped_points, f, fisheye_hm
 
 def _fisheye(xy, f):
     center = np.mean(xy, axis=0)
@@ -132,16 +156,17 @@ def visualize_example():
         data = pickle.load(file)
         img, points, lines = get_img_pointline(data)
 
-        out, warped_points, f = fisheye_transform(data)
+        out, warped_points, f, fisheye_hm = fisheye_transform(data)
 
         draw_points(img, points)
         draw_point_lines(img, points, lines)
         draw_points(out, warped_points, size=4, rgb_scale=1)
         draw_point_lines(out, warped_points, lines, rgb_scale=1)
 
-        f, (ax0, ax1) = plt.subplots(1, 2, subplot_kw=dict(xticks=[], yticks=[]))
+        fig, (ax0, ax1, ax2) = plt.subplots(1, 3, subplot_kw=dict(xticks=[], yticks=[]))
         ax0.imshow(img)
         ax1.imshow(out)
+        ax2.imshow(fisheye_hm)
 
         plt.show()
 
@@ -151,7 +176,7 @@ def synthesize():
         with open(os.path.join(DATA_DIR, 'pointlines/', filename), 'rb') as file:
             data = pickle.load(file)
             img, points, lines = get_img_pointline(data)
-            fisheye, warped_points, f = fisheye_transform(data)
+            fisheye, warped_points, f, fisheye_hm = fisheye_transform(data)
 
             fisheye_data = {
                 'filename': filename,
@@ -160,8 +185,13 @@ def synthesize():
                 'focalLength': f,
                 'points': points,
                 'lines':lines,
-                'warpedPoints': warped_points
+                'warpedPoints': warped_points,
+                'fisheyeHeatmap': fisheye_hm
             }
 
             with open(os.path.join(DATA_DIR, 'fisheye_pointlines/', filename), 'wb') as out_file:
                 pickle.dump(fisheye_data, out_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+if __name__ == '__main__':
+    visualize_example()

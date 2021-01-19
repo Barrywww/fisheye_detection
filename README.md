@@ -46,3 +46,4 @@ In every .pkl file generated, the following information is contained:
 5. points: points associated with the original picture
 6. lines: lines needed by the network
 7. warpedPoints: points after warpping
+8. fisheyeHeatmap: ground truth for fisheye heatmap
