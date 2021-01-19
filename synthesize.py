@@ -4,9 +4,10 @@ from skimage import img_as_ubyte, io, transform
 import skimage
 import random
 import pickle
+import os
 from wireframe import draw_points, draw_point_lines
 
-DATA_DIR = "data/wireframe/pointlines/"
+DATA_DIR = "data/wireframe/"
 OUT_RADIUS = 500
 OUT_DIAMETER = OUT_RADIUS * 2
 
@@ -15,19 +16,20 @@ per_mm = 3.7795275591
 min_fl = min(focal_lengths) * per_mm
 
 
-def crop_rect(img: np.ndarray, points: np.ndarray, length=OUT_DIAMETER):
+def crop_rect(img: np.ndarray, points=None, length=OUT_DIAMETER):
     w, h = img.shape[:2]
-    c0 = np.array((w, h)) / 2
-    points = points - c0
 
     res = np.abs((w - h) // 2)
     if w > h:
         img = img[res: -res, :]
     elif w < h:
         img = img[:, res: -res]
-    
-    k = length / img.shape[0]
-    points = points * k + length / 2
+
+    if points is not None:
+        c0 = np.array((w, h)) / 2
+        points = points - c0
+        k = length / img.shape[0]
+        points = points * k + length / 2
     return transform.resize(img, (length, length)), points
 
 def resize(img: np.ndarray, points: np.ndarray, min_length=OUT_DIAMETER):
@@ -69,7 +71,15 @@ def get_img_pointline(data):
     img = data['img']
     return img, points, lines
 
-def warp_points(points: np.ndarray, center, f):
+def crop_corners(img: np.ndarray, scale):
+    length0 = img.shape[0]
+    length_prime = int(scale * length0)
+    out = transform.resize(img, (length_prime, length_prime))
+    res = (length_prime - length0) // 2
+    out = out[res:-res, res:-res]
+    return out
+
+def warp_points(points: np.ndarray, center, f, scale):
     points -= center
 
     u, v = points[:, 0], points[:, 1]
@@ -78,7 +88,7 @@ def warp_points(points: np.ndarray, center, f):
     theta = np.arctan2(d, f)
     r = 2 * theta * OUT_RADIUS / np.pi
 
-    return np.column_stack((r * np.cos(phi), r * np.sin(phi))) + center
+    return np.column_stack((r * np.cos(phi) * scale, r * np.sin(phi) * scale)) + center
 
 def fisheye_transform(data: np.ndarray, circle=True):
     img, points, lines = get_img_pointline(data)
@@ -92,16 +102,17 @@ def fisheye_transform(data: np.ndarray, circle=True):
 
     uc, vc = np.array(img.shape[:2]) // 2
     u_max, v_max = np.array(img.shape[0]) - uc, np.array(img.shape[1]) - vc
-
     d = np.sqrt(u_max**2 + v_max**2)
     theta0 = np.arctan(d / f)
     phi0 = np.arctan(v_max / u_max)
     r = 2 * theta0 * OUT_RADIUS / np.pi
 
-    warped_points = warp_points(points, (uc, vc), f)
+    scale = OUT_RADIUS / r
     out = transform.warp(img, _fisheye, map_args={'f': f})
+    out = crop_corners(out, scale)
+    warped_points = warp_points(points, (uc, vc), f, scale)
     
-    return out, warped_points
+    return out, warped_points, f
 
 def _fisheye(xy, f):
     center = np.mean(xy, axis=0)
@@ -115,22 +126,42 @@ def _fisheye(xy, f):
     
     return np.column_stack((d * np.cos(phi), d * np.sin(phi))) + center
 
-
-if __name__ == '__main__':
+def visualize_example():
     filename = '00030043'
-    with open(DATA_DIR + filename + '.pkl', 'rb') as file:
+    with open(DATA_DIR + 'pointlines/' + filename + '.pkl', 'rb') as file:
         data = pickle.load(file)
         img, points, lines = get_img_pointline(data)
 
-        out, warped_points = fisheye_transform(data)
+        out, warped_points, f = fisheye_transform(data)
 
         draw_points(img, points)
         draw_point_lines(img, points, lines)
         draw_points(out, warped_points, size=4, rgb_scale=1)
-        draw_point_lines(out, warped_points, lines)
+        draw_point_lines(out, warped_points, lines, rgb_scale=1)
 
         f, (ax0, ax1) = plt.subplots(1, 2, subplot_kw=dict(xticks=[], yticks=[]))
         ax0.imshow(img)
         ax1.imshow(out)
 
         plt.show()
+
+def synthesize():
+    filenames = os.listdir(DATA_DIR + 'pointlines/')
+    for filename in filenames:
+        with open(os.path.join(DATA_DIR, 'pointlines/', filename), 'rb') as file:
+            data = pickle.load(file)
+            img, points, lines = get_img_pointline(data)
+            fisheye, warped_points, f = fisheye_transform(data)
+
+            fisheye_data = {
+                'filename': filename,
+                'img': img, 
+                'fisheyeImg': fisheye, 
+                'focalLength': f,
+                'points': points,
+                'lines':lines,
+                'warpedPoints': warped_points
+            }
+
+            with open(os.path.join(DATA_DIR, 'fisheye_pointlines/', filename), 'wb') as out_file:
+                pickle.dump(fisheye_data, out_file, protocol=pickle.HIGHEST_PROTOCOL)
