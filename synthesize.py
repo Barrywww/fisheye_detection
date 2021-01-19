@@ -4,7 +4,7 @@ from skimage import img_as_ubyte, io, transform
 import skimage
 import random
 import pickle
-from wireframe import draw_points
+from wireframe import draw_points, draw_point_lines
 
 DATA_DIR = "data/wireframe/pointlines/"
 OUT_RADIUS = 500
@@ -69,9 +69,8 @@ def get_img_pointline(data):
     img = data['img']
     return img, points, lines
 
-def warp_points(points: np.ndarray, center, scale, f):
+def warp_points(points: np.ndarray, center, f):
     points -= center
-    points *= scale
 
     u, v = points[:, 0], points[:, 1]
     phi = np.arctan2(v, u)
@@ -98,18 +97,15 @@ def fisheye_transform(data: np.ndarray, circle=True):
     theta0 = np.arctan(d / f)
     phi0 = np.arctan(v_max / u_max)
     r = 2 * theta0 * OUT_RADIUS / np.pi
-    scale = OUT_RADIUS / r
 
-    warped_points = warp_points(points, (uc, vc), scale, f)
-    out = transform.warp(img, _fisheye, map_args={'f': f, 'scale': scale})
-
-    # TODO: solve scaling for non-circled pictures
+    warped_points = warp_points(points, (uc, vc), f)
+    out = transform.warp(img, _fisheye, map_args={'f': f})
     
     return out, warped_points
 
-def _fisheye(xy, f, scale):
+def _fisheye(xy, f):
     center = np.mean(xy, axis=0)
-    xy = (xy - center) / scale
+    xy = (xy - center)
     x, y = xy[:, 0], xy[:, 1]
 
     r = np.sqrt(x**2 + y**2)
@@ -129,7 +125,9 @@ if __name__ == '__main__':
         out, warped_points = fisheye_transform(data)
 
         draw_points(img, points)
+        draw_point_lines(img, points, lines)
         draw_points(out, warped_points, size=4, rgb_scale=1)
+        draw_point_lines(out, warped_points, lines)
 
         f, (ax0, ax1) = plt.subplots(1, 2, subplot_kw=dict(xticks=[], yticks=[]))
         ax0.imshow(img)

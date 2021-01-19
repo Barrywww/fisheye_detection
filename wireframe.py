@@ -9,6 +9,13 @@ def draw_points(img, points, size=2, rgb_scale=255):
         if size <= point[0] < img.shape[0] - size and size <= point[1] < img.shape[1] - size:
             img[draw.disk(point, size)] = (0, 1*rgb_scale, 0)
 
+def draw_point_lines(img, points, lines):
+    for line in lines:
+        point1, point2 = line
+        x1, y1 = int(points[point1][0]) - 1, int(points[point1][1]) - 1
+        x2, y2 = int(points[point2][0]) - 1, int(points[point2][1]) - 1
+        img[draw.line(x1, y1, x2, y2)] = (255, 0, 0)
+
 
 def visualize(data):
     lines = data['lines']
@@ -34,8 +41,9 @@ def info(data):
 
 if __name__ == '__main__':
     filename = '00030043'
-    # with open(DATA_DIR + filename + '.pkl', 'rb') as file:
-    #     data = pickle.load(file)
+    with open("data/wireframe/pointlines/" + filename + '.pkl', 'rb') as file:
+        data = pickle.load(file)
+        info(data)
     #     points = np.array(data['points'])
     #     points = np.column_stack((points[:, 1], points[:, 0]))
     #     im = data['img']
