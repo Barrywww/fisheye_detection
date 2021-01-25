@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import img_as_ubyte, io, transform
+from skimage import transform
 import skimage
 import random
 import pickle
@@ -33,6 +33,7 @@ def crop_rect(img: np.ndarray, points=None, length=OUT_DIAMETER):
 
     return transform.resize(img, (length, length)), points
 
+
 def resize(img: np.ndarray, points: np.ndarray, min_length=OUT_DIAMETER):
     w, h = img.shape[:2]
 
@@ -49,6 +50,7 @@ def resize(img: np.ndarray, points: np.ndarray, min_length=OUT_DIAMETER):
 
     return out, points
 
+
 def crop_circle(im: np.ndarray, points=None, radius=OUT_RADIUS, rect=True):
     if rect:
         im, points = crop_rect(im, points)
@@ -60,10 +62,12 @@ def crop_circle(im: np.ndarray, points=None, radius=OUT_RADIUS, rect=True):
     out[rr, cc] = im[rr, cc]
     return out, points
 
+
 def new_focal_length():
     fl_mm = random.choice(focal_lengths)
     fl_px = fl_mm * per_mm
     return fl_mm, fl_px
+
 
 def get_img_pointline(data):
     lines = np.array(data['lines'])
@@ -72,25 +76,29 @@ def get_img_pointline(data):
     img = data['img']
     return img, points, lines
 
+
 def get_heatmap(img, points, lines, f, scale):
     points += np.array(img.shape[:2]) // 2 - 1
 
     orig_hm = np.zeros(img.shape[:2])
 
     for i in range(lines.shape[0]):
-        start, end = points[lines[i][0]].astype(int), points[lines[i][1]].astype(int)
+        start, end = points[lines[i][0]].astype(int),\
+                            points[lines[i][1]].astype(int)
         # print(start, end)
         distance = np.linalg.norm(start - end)
         rr, cc = skimage.draw.line(start[0], start[1], end[0], end[1])
         line = np.column_stack((rr, cc))
-        line = line[(line[:,0] >= 0) & (line[:,1] < img.shape[1])]
+        line = line[(line[:, 0] >= 0) & (line[:, 1] < img.shape[1])]
         rr, cc = line[:, 0], line[:, 1]
         orig_hm[rr, cc] = distance
 
-    fisheye_hm = transform.warp(orig_hm, _fisheye, map_args={'f': f})
+    fisheye_hm = transform.warp(orig_hm, _fisheye,
+                                map_args={'f': f})
     fisheye_hm = crop_corners(fisheye_hm, scale)
 
     return fisheye_hm
+
 
 def crop_corners(img: np.ndarray, scale):
     length0 = img.shape[0]
@@ -99,6 +107,7 @@ def crop_corners(img: np.ndarray, scale):
     res = (length_prime - length0) // 2
     out = out[res:-res, res:-res]
     return out
+
 
 def warp_points(points: np.ndarray, center, f, scale):
     points -= center
@@ -109,24 +118,24 @@ def warp_points(points: np.ndarray, center, f, scale):
     theta = np.arctan2(d, f)
     r = 2 * theta * OUT_RADIUS / np.pi
 
-    return np.column_stack((r * np.cos(phi) * scale, r * np.sin(phi) * scale)) + center
+    return np.column_stack((r * np.cos(phi) * scale,
+                            r * np.sin(phi) * scale)) + center
 
 
 def fisheye_transform(data: np.ndarray, circle=True):
     img, points, lines = get_img_pointline(data)
-    
+
     if circle:
         img, points = crop_circle(img, points)
     else:
         img, points = resize(img, points)
-    
+
     f = new_focal_length()[1]
 
     uc, vc = np.array(img.shape[:2]) // 2
     u_max, v_max = np.array(img.shape[0]) - uc, np.array(img.shape[1]) - vc
     d = np.sqrt(u_max**2 + v_max**2)
     theta0 = np.arctan(d / f)
-    phi0 = np.arctan(v_max / u_max)
     r = 2 * theta0 * OUT_RADIUS / np.pi
 
     scale = OUT_RADIUS / r
@@ -135,8 +144,9 @@ def fisheye_transform(data: np.ndarray, circle=True):
     warped_points = warp_points(points, (uc, vc), f, scale)
 
     fisheye_hm = get_heatmap(img, points, lines, f, scale)
-    
+
     return out, warped_points, f, fisheye_hm
+
 
 def _fisheye(xy, f):
     center = np.mean(xy, axis=0)
@@ -147,8 +157,9 @@ def _fisheye(xy, f):
     theta = np.pi / 2 * r / OUT_RADIUS
     d = f * np.tan(theta)
     phi = np.arctan2(y, x)
-    
+
     return np.column_stack((d * np.cos(phi), d * np.sin(phi))) + center
+
 
 def visualize_example():
     filename = '00030043'
@@ -163,34 +174,42 @@ def visualize_example():
         draw_points(out, warped_points, size=4, rgb_scale=1)
         draw_point_lines(out, warped_points, lines, rgb_scale=1)
 
-        fig, (ax0, ax1, ax2) = plt.subplots(1, 3, subplot_kw=dict(xticks=[], yticks=[]))
+        fig, (ax0, ax1, ax2) = plt.subplots(1, 3,
+                                            subplot_kw=dict(
+                                                xticks=[],
+                                                yticks=[]))
         ax0.imshow(img)
         ax1.imshow(out)
         ax2.imshow(fisheye_hm)
 
         plt.show()
 
+
 def synthesize():
     filenames = os.listdir(DATA_DIR + 'pointlines/')
     for filename in filenames:
-        with open(os.path.join(DATA_DIR, 'pointlines/', filename), 'rb') as file:
+        with open(os.path.join(DATA_DIR, 'pointlines/',
+                               filename), 'rb') as file:
             data = pickle.load(file)
             img, points, lines = get_img_pointline(data)
             fisheye, warped_points, f, fisheye_hm = fisheye_transform(data)
 
             fisheye_data = {
                 'filename': filename,
-                'img': img, 
-                'fisheyeImg': fisheye, 
+                'img': img,
+                'fisheyeImg': fisheye,
                 'focalLength': f,
                 'points': points,
-                'lines':lines,
+                'lines': lines,
                 'warpedPoints': warped_points,
                 'fisheyeHeatmap': fisheye_hm
             }
 
-            with open(os.path.join(DATA_DIR, 'fisheye_pointlines/', filename), 'wb') as out_file:
-                pickle.dump(fisheye_data, out_file, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(os.path.join(DATA_DIR,
+                                   'fisheye_pointlines/',
+                                   filename), 'wb') as out_file:
+                pickle.dump(fisheye_data, out_file,
+                            protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
