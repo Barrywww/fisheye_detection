@@ -21,9 +21,11 @@ EPOCHS = 150
 LR = 0.001
 BATCH_SIZE = 15
 
+
 class DLPLoss(nn.Module):
     def __init__(self):
         super(DLPLoss, self).__init__()
+
     def forward(self, y_pred, gt):
         """
         x,gt: torch.Tensor, shape:(320,320) (y, x)
@@ -35,19 +37,20 @@ class DLPLoss(nn.Module):
         
         for y in range(len(y_pred)):
             for x in range(len(y_pred)):
-                line_length = calc_length((y,x), gt["lines"])
+                line_length = calc_length((y, x), gt["lines"])
                 if y_pred[y][x] != 0:
                     positive_set += 1
-                    dp_positive += (gt["line_length"][y][x], line_length)^2
+                    dp_positive += (gt["line_length"][y][x] - line_length)**2
                 else:
                     negative_set += 1
-                    dp_negative += (gt["line_length"][y][x], line_length)^2
+                    dp_negative += (gt["line_length"][y][x] - line_length)**2
         
         tot = dp_positive + dp_negative
         loss = dp_negative / tot * dp_negative + dp_positive / tot * dp_positive
         
         return loss
-                            
+
+
 def calc_length(p, lines):
     """
     Calculate the minimal distance from p to line in lines
@@ -107,6 +110,7 @@ def main():
         losses.append(loss)
     
     return losses
+
 
 if __name__ == "__main__":
     main()

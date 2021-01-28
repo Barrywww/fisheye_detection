@@ -7,11 +7,12 @@ from calibration import CalibrationGlobal, CalibrationLocal
 
 
 class LaRecNet(nn.Module):
-    def __init__(self, dataset, block, layers):
+    def __init__(self, img, block, layers):
         # receives modified dataset after DLP module
         # 320 * 320 * 4 (RGB + heatmap channel)
 
         super(LaRecNet, self).__init__()
+        self.current_img = img
         self.inplanes = 256
         self.block = BasicBlock
         self.conv1 = nn.Conv2d(4, self.inplanes, kernel_size=1, stride=1)
@@ -37,9 +38,8 @@ class LaRecNet(nn.Module):
                 norm_layer(planes * block.expansion),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, norm_layer=norm_layer))
+        layers = [block(self.inplanes, planes, stride, downsample, self.groups,
+                        self.base_width, norm_layer=norm_layer)]
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
@@ -67,6 +67,8 @@ class LaRecNet(nn.Module):
 
         k_local = torch.cat([k_local, k_global[0][0:6].resize_(1, 5)])
         k_avg = k_local.mean(dim=-2)
+
+        # rectified = self.rectification_layer(k_local)
 
         return [k_global, k_local, torch.cat([k_avg[0], k_global[0][5:]])]
 
