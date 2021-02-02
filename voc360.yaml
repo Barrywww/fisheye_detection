@@ -1,0 +1,8 @@
+train: /Users/tyawang/OneDrive/Research/fisheye_detection/data/VOC360-yolo/images
+val: /Users/tyawang/OneDrive/Research/fisheye_detection/data/VOC360-yolo/images
+
+# number of classes
+nc: 20
+
+# class names
+names: ['person','bird', 'cat', 'cow', 'dog', 'horse', 'sheep', 'aeroplane', 'bicycle', 'boat', 'bus', 'car', 'motorbike', 'train', 'bottle', 'chair', 'diningtable', 'pottedplant', 'sofa', 'tvmonitor']
