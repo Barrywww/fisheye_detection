@@ -17,12 +17,13 @@ for filename in tqdm(os.listdir(ANNOTATION_DIR)):
             imwidth = int(soup.size.width.string)
             imheight = int(soup.size.height.string)
             for object in objects:
-                if object.find("bndbox", recursive=False) is not None:
+                bndbox = object.find("bndbox", recursive=False)
+                if bndbox is not None:
                     name = str(names.index(object.find('name').string))
-                    xmin = int(object.bndbox.xmin.string)
-                    xmax = min(imwidth, int(object.bndbox.xmax.string))
-                    ymin = int(object.bndbox.ymin.string)
-                    ymax = min(imheight, int(object.bndbox.ymax.string))
+                    xmin = int(bndbox.find("xmin").string)
+                    xmax = min(imwidth, int(bndbox.xmax.string))
+                    ymin = int(bndbox.ymin.string)
+                    ymax = min(imheight, int(bndbox.ymax.string))
                     xcenter = str((xmin + xmax) / 2 / imwidth)
                     ycenter = str((ymin + ymax) / 2 / imheight)
                     width = str((xmax - xmin) / imwidth)
