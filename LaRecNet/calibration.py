@@ -15,7 +15,9 @@ class CalibrationGlobal(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
+        print(x.shape)
         x = self.pool1(x)
+        x = x.reshape(1, 1024)
         x = self.fc2(x)
         x = self.fc3(x)
 
@@ -39,19 +41,19 @@ class CalibrationLocal(nn.Module):
         self.filter = nn.Linear(9, 5)
 
     def forward(self, x):
-        tl = x[:self.corner_side, :self.corner_side, :]
-        tr = x[self.corner_side:, -self.corner_side:, :]
-        bl = x[-self.corner_side:, :self.corner_side, :]
-        br = x[-self.corner_side:, -self.corner_side, :]
-        ctr_point = x.shape()[0]//2
-        ctr = x[ctr_point - self.ctr_side//2:, ctr_point + self.ctr_side//2, :]
+        tl = x[:, :, self.corner_side, :self.corner_side]
+        tr = x[:, :, self.corner_side:, -self.corner_side:]
+        bl = x[:, :, -self.corner_side:, :self.corner_side]
+        br = x[:, :, -self.corner_side:, -self.corner_side]
+        ctr_point = x.shape[2]//2
+        ctr = x[:, :, ctr_point - self.ctr_side//2:, ctr_point + self.ctr_side//2]
 
         tl = self.pool_tl(tl)
         tr = self.pool_tr(tr)
         bl = self.pool_bl(bl)
         br = self.pool_br(br)
         ctr = self.pool_ctr(ctr)
-
+        print(tl.shape, tr.shape, bl.shape, br.shape, ctr.shape)
         ftr_concat = torch.cat([tl, tr, bl, br, ctr]).resize_(x.shape[2])
 
         out = self.fc_s1(ftr_concat)

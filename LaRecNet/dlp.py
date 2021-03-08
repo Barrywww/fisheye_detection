@@ -46,7 +46,7 @@ class BasicBlock(nn.Module):
 
         if residual_channel != shortcut_channel:
             padding = torch.autograd.Variable(
-                torch.cuda.FloatTensor(batch_size, residual_channel - shortcut_channel, featuremap_size[0],
+                torch.FloatTensor(batch_size, residual_channel - shortcut_channel, featuremap_size[0],
                                        featuremap_size[1]).fill_(0))
             out += torch.cat((shortcut, padding), 1)
         else:
@@ -66,10 +66,10 @@ class PyramidNet(nn.Module):
         self.addrate = alpha / (3 * n * 1.0)
 
         self.input_featuremap_dim = self.inplanes
-        self.conv1 = nn.Conv2d(3, self.input_featuremap_dim, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=self.input_featuremap_dim, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(self.input_featuremap_dim)
 
-        self.featuremap_dim = self.out_c
+        self.featuremap_dim = self.input_featuremap_dim
         self.layer1 = self.pyramidal_make_layer(block, n)
         self.layer2 = self.pyramidal_make_layer(block, n, stride=2)
         self.layer3 = self.pyramidal_make_layer(block, n, stride=2)
@@ -107,6 +107,8 @@ class PyramidNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        x = torch.from_numpy(x).float()
+        print(x.shape)
         x = self.conv1(x)
         x = self.bn1(x)
 
@@ -137,7 +139,7 @@ class DLP(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
 
-        self.deconv2 = nn.ConvTranspose2d(64, 1, kernel_size=160, stride=1)
+        self.deconv2 = nn.ConvTranspose2d(64, 3, kernel_size=160, stride=1)
         self.bn2 = nn.BatchNorm2d(3)
         self.relu2 = nn.ReLU(inplace=True)
 

@@ -17,9 +17,9 @@ from torch.utils.data import DataLoader
 from dlp import DLP
 
 DATASET_PATH = "/Users/barrywang/Datasets/wireframe/"
-EPOCHS = 150
+EPOCHS = 1
 LR = 0.001
-BATCH_SIZE = 15
+BATCH_SIZE = 10
 
 
 class DLPLoss(nn.Module):
@@ -74,13 +74,16 @@ def calc_length(p, lines):
 
 def train(model, train_loader):
     loss_func = DLPLoss()
-    optimizer = torch.optim.SGD(lr=LR)
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=LR)
     
     total_loss = 0
     
     for idx, pkl in enumerate(train_loader):
-        prediction = model(pkl[idx]["img"])
-        loss = loss_func(prediction, pkl[idx]["heatmap"])
+        print(pkl.keys())
+        print(pkl["img"].shape)
+        prediction = model(np.random.rand(1, 3, 320, 320))
+        # prediction = model(pkl["img"])
+        loss = loss_func(prediction, pkl["heatmap"])
         
         optimizer.zero_grad()
         loss.backward()
@@ -99,10 +102,10 @@ def main():
     filename = "00030043.pkl"
     # wireframe_dataset = DataLoader()
     img_file = open(DATASET_PATH + filename, "rb")
-    img_file.close()
     
     img_pkl = [pickle.load(img_file)]
-    model = DLP(depth=110, alpha=48, nstacks=5)
+    img_file.close()
+    model = DLP(depth=32, alpha=240, nstacks=5)
     
     losses = []
     for i in range(EPOCHS):
