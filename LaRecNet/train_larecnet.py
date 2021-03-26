@@ -10,18 +10,19 @@ from numpy.linalg import *
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-import torch.distributed as dist
 import torch.optim
+from datasets import *
 from torch.utils.data import DataLoader
 
 from larecnet import LaRecNet
 from resnet import BasicBlock
 
+DATASET = "wireframe"
 DATASET_PATH = "/Users/barrywang/Datasets/wireframe/"
-EPOCHS = 150
-LR = 0.001
-BATCH_SIZE = 15
-PARAM_WEIGHT = torch.Tensor([0.1, 0.1, 0.5, 1, 1, 0.1, 0.1, 0.1, 0.1]).resize_(9, 1)
+EPOCHS = 3
+LR = 0.0001
+BATCH_SIZE = 4
+# PARAM_WEIGHT = torch.Tensor([0.1, 0.1, 0.5, 1, 1, 0.1, 0.1, 0.1, 0.1]).resize_(9, 1)
 
 
 def r_f(angle, k, num_params=5):
@@ -37,7 +38,7 @@ class LaRecNetLoss(nn.Module):
                  lambda_m=2, lambda_geo=100, lambda_pix=1, lambda_para=1):
         super(LaRecNetLoss, self).__init__()
         # params for MCM
-        self.weights = np.random.rand(9)
+        self.weights = np.ones(9)
         self.lambda_fus = lambda_fus
         self.lambda_global = lambda_global
         self.lambda_local = lambda_local
@@ -70,24 +71,22 @@ class LaRecNetLoss(nn.Module):
         return loss_fused + loss_local + loss_global
 
 
-def train(model, train_loader):
-    weights = []
-    loss_func = LaRecNetLoss(weights)
-    optimizer = torch.optim.SGD(model.parameters(), lr=LR)
+def train(model, inputs, ground_truth):
+    # loss_func = LaRecNetLoss(weights)
+    loss_func = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     total_loss = 0
+    inputs = torch.reshape(inputs, (BATCH_SIZE, 3, 320, 320))
+    prediction = model(inputs)
+    # print("Model Output:", prediction)
+    loss = loss_func(prediction, ground_truth)
 
-    for idx, pkl in enumerate(train_loader):
-        # prediction = model(pkl[idx]["img"])
-        prediction = model(np.random.rand(1, 4, 320, 320).astype(np.float32))
-        print("Model Output:", prediction[0])
-        loss = loss_func(prediction, pkl["distortion"])
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
+    total_loss += loss.item()
 
     return total_loss
 
@@ -97,21 +96,23 @@ def test(model, test_loader):
 
 
 def main():
-    filename = "00030043.pkl"
-    # wireframe_dataset = DataLoader()
-    img_file = open(DATASET_PATH + filename, "rb")
+    if DATASET == "wireframe":
+        wireframe = Wireframe("/Users/barrywang/datasets/wireframe/v1.1/test1.txt")
+        dataset_loader = DataLoader(dataset=wireframe, batch_size=BATCH_SIZE, shuffle=True)
+    else:
+        dataset_loader = None
 
-    img_pkl = [pickle.load(img_file)]
-    img_file.close()
-    img_pkl[0]["distortion"] = np.random.rand(9)
-    model = LaRecNet(img=img_pkl, block=BasicBlock, layers=[2,2,2,2])
-
+    model = LaRecNet(block=BasicBlock, layers=[2, 2, 2, 2], batch_size=BATCH_SIZE)
     losses = []
-    for i in range(EPOCHS):
-        loss = train(model, img_pkl)
-        losses.append(loss)
 
-    return losses
+    for i in range(EPOCHS):
+        for idx, data in enumerate(dataset_loader):
+            inputs, ground_truth = data
+            loss = train(model, inputs, ground_truth)
+            losses.append(loss)
+        print(losses)
+        print("EPOCH %d FINISH" % i)
+    return sum(losses) / len(losses)
 
 
 if __name__ == "__main__":

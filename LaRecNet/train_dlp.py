@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.distributed as dist
 import torch.optim
+from datasets import *
 from torch.utils.data import DataLoader
 
 from dlp import DLP
@@ -99,6 +100,7 @@ def test(model, test_loader):
 
 
 def main():
+    datasets = Wireframe("/Users/barrywang/datasets/wireframe/v1.1/test1.txt")
     filename = "00030043.pkl"
     # wireframe_dataset = DataLoader()
     img_file = open(DATASET_PATH + filename, "rb")
