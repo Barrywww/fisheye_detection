@@ -170,7 +170,7 @@ def main():
             optimizer.step()
             # scheduler.step()
 
-        avg_loss = (sum(epoch_loss_train) / len(epoch_loss_train)).cpu().float()
+        avg_loss = (sum(epoch_loss_train) / len(epoch_loss_train)).cpu().detach().float()
         TRAIN_LOSSES.append(avg_loss)
         print("##### EPOCH %d train finished." % (i + 1))
         print("##### Average train loss:", avg_loss)
