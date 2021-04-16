@@ -47,3 +47,12 @@ In every .pkl file generated, the following information is contained:
 6. lines: lines needed by the network
 7. warpedPoints: points after warpping
 8. fisheyeHeatmap: ground truth for fisheye heatmap
+
+# Trainning on NYUSH HPC
+## Dependencies
+Current workaround:
+
+- python = 3.8
+- torch = 1.7.1
+- cuda = 10.1
+- cudnn = 7.6.5
