@@ -33,7 +33,9 @@ root/
 |---|----|----pointlines/
 |---|----|-----|-----[all wireframe .pkl]
 |---|----|----fisheye_pointlines/
-
+|---|----|-----|-----[all fisheye_wireframe .pkl]
+|---|----|----tasks/
+|---|----|-----|-----[text files that contain list of train/test files]
 ```
 
 And the output information will be generated into `fisheye_pointlines/`.
@@ -50,9 +52,15 @@ In every .pkl file generated, the following information is contained:
 
 # Trainning on NYUSH HPC
 ## Dependencies
-Current workaround:
+Current environment (with NVIDIA Apex Enable):
 
 - python = 3.8
-- torch = 1.7.1
-- cuda = 10.1
+- torch = 1.7.1+cu110
+- torchvision = 0.8.2+cu110
+- cuda = 11.0
 - cudnn = 7.6.5
+
+For Apex installation, please refer to  [NVIDIA/apex](https://girhub.com/NVIDIA/apex)
+
+## Train
+To train the model, simply run `sbatch ./HPC_train.sh`.
