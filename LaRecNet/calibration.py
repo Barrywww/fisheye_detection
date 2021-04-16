@@ -56,6 +56,9 @@ class CalibrationLocal(nn.Module):
         ctr = x[:, :, ctr_point - self.ctr_side//2:ctr_point + self.ctr_side//2,
               ctr_point - self.ctr_side//2:ctr_point + self.ctr_side//2]
 
+        x_shape = x.shape[1]
+        # del x
+
         tl = self.pool_tl(tl)
         tr = self.pool_tr(tr)
         bl = self.pool_bl(bl)
@@ -65,7 +68,7 @@ class CalibrationLocal(nn.Module):
         # ftr_concat = torch.cat([tl, tr, bl, br, ctr])
         ftr_concat = (tl+tr+bl+br+ctr) / 5
         # print(ftr_concat.shape)
-        ftr_concat = torch.reshape(ftr_concat, (self.batch_size, x.shape[1]))
+        ftr_concat = torch.reshape(ftr_concat, (self.batch_size, x_shape))
 
         out = self.fc_s1(ftr_concat)
         out = self.fc_s2(out)

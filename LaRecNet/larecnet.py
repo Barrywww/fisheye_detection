@@ -80,7 +80,7 @@ class LaRecNet(nn.Module):
         k_avg = k_local + k_global / 2
         # rectified = self.rectification_layer(k_local)
         f = self.linear(k_avg)
-        print("F: ", f.reshape(self.batch_size))
+        # print("F: ", f.reshape(self.batch_size))
         return f
 
 

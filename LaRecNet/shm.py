@@ -15,7 +15,7 @@ class Conv(nn.Module):
         self.relu = None
         self.bn = None
         if relu:
-            self.relu = nn.ReLU()
+            self.relu = nn.ReLU(inplace=True)
         if bn:
             self.bn = nn.BatchNorm2d(out_dim)
 
@@ -32,7 +32,7 @@ class Conv(nn.Module):
 class Residual(nn.Module):
     def __init__(self, inp_dim, out_dim):
         super(Residual, self).__init__()
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
         self.bn1 = nn.BatchNorm2d(inp_dim)
         self.conv1 = Conv(inp_dim, int(out_dim / 2), 1, relu=False)
         self.bn2 = nn.BatchNorm2d(int(out_dim / 2))

@@ -108,7 +108,6 @@ class PyramidNet(nn.Module):
 
     def forward(self, x):
         x = torch.from_numpy(x).float()
-        print(x.shape)
         x = self.conv1(x)
         x = self.bn1(x)
 
