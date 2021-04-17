@@ -20,7 +20,7 @@ DATASET = "wireframe"
 DATASET_PATH = DRIVE_PATH + "Datasets/wireframe/"
 GRAPH_PATH = DRIVE_PATH + "Graphs/"
 MODEL_PATH = DRIVE_PATH + "Models/"
-EPOCHS = 100
+EPOCHS = 30
 LR = 0.00001
 BATCH_SIZE = 16
 TRAIN_LOSSES = []
@@ -128,8 +128,8 @@ def save_plot(train_loss, test_loss, e):
 # %%
 def main():
     if DATASET == "wireframe":
-        wireframe_train = Wireframe(DATASET_PATH + "v1.1/train_4320.txt", DRIVE_PATH + "Datasets/")
-        wireframe_test = Wireframe(DATASET_PATH + "v1.1/test_1080.txt", DRIVE_PATH + "Datasets/")
+        wireframe_train = Wireframe(DATASET_PATH + "tasks/train_4320.txt", DRIVE_PATH + "Datasets/")
+        wireframe_test = Wireframe(DATASET_PATH + "tasks/test_1080.txt", DRIVE_PATH + "Datasets/")
         dataset_loader = DataLoader(dataset=wireframe_train, batch_size=BATCH_SIZE, pin_memory=True, drop_last=True,
                                     shuffle=True)
         test_loader = DataLoader(dataset=wireframe_test, batch_size=BATCH_SIZE, pin_memory=True, drop_last=True,

@@ -23,7 +23,7 @@ class Wireframe(Dataset):
 
 
 if __name__ == "__main__":
-    datasets = Wireframe("wireframe/v1.1/test1.txt")
+    datasets = Wireframe("wireframe/tasks/test1.txt")
     x, y = datasets[0]
     print(x, y)
     print(len(datasets))

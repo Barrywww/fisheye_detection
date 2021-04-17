@@ -100,7 +100,7 @@ def test(model, test_loader):
 
 
 def main():
-    datasets = Wireframe("/Users/barrywang/datasets/wireframe/v1.1/test1.txt")
+    datasets = Wireframe("/Users/barrywang/datasets/wireframe/tasks/test1.txt")
     filename = "00030043.pkl"
     # wireframe_dataset = DataLoader()
     img_file = open(DATASET_PATH + filename, "rb")
