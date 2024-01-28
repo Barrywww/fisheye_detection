@@ -1,3 +1,10 @@
+# Note
+⚠️This is an outdated project and is no longer maintained. 
+
+Some part of the project take ideas from paper [*Learning to Calibrate Straight Lines for Fisheye Image Rectification*](https://arxiv.org/abs/1904.09856). This is not an official repo and the project was not completed. 
+
+Credits give to the original team.
+
 # Preparation
 
 Put image into a `data/` folder in the root directory and change `filename` in the script you want to run.
@@ -49,18 +56,3 @@ In every .pkl file generated, the following information is contained:
 6. lines: lines needed by the network
 7. warpedPoints: points after warpping
 8. fisheyeHeatmap: ground truth for fisheye heatmap
-
-# Trainning on NYUSH HPC
-## Dependencies
-Current environment (with NVIDIA Apex Enable):
-
-- python = 3.8
-- torch = 1.7.1+cu110
-- torchvision = 0.8.2+cu110
-- cuda = 11.0
-- cudnn = 7.6.5
-
-For Apex installation, please refer to  [NVIDIA/apex](https://girhub.com/NVIDIA/apex)
-
-## Train
-To train the model, simply run `sbatch ./HPC_train.sh`.
